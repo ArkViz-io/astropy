@@ -1,49 +1,63 @@
 model {
-  projAstronomer = actor 'Astronomer / Researcher' {
-    description 'A scientist or researcher using Astropy for data analysis and astrophysical calculations'
+  projUser = actor 'Astronomer / Researcher' {
+    description 'A scientist or researcher using Astropy for data analysis and astronomical calculations'
   }
 
-  projDeveloper = actor 'Astropy Developer' {
-    description 'A contributor developing or maintaining the core library and its extensions'
+  projDeveloper = actor 'Package Developer' {
+    description 'A developer contributing to the Astropy core library or building affiliated packages'
   }
 
   projAstropy = system 'Astropy' {
-    description 'A core Python library for astronomy and astrophysics'
+    description 'A core Python library for Astronomy and Astrophysics providing data structures and common algorithms'
 
     projCoreLib = service 'Astropy Core Library' {
       technology 'Python, C, Cython'
-      description 'The main library providing units, coordinates, tables, and WCS functionality'
+      description 'The main package containing coordinates, units, time, and core data structures'
 
       projCoordinates = component 'Coordinates Module' {
-        technology 'Python, ERFA'
         description 'Handles celestial coordinate systems and transformations'
+        technology 'Python, ERFA'
       }
       projUnits = component 'Units & Quantities' {
+        description 'Provides support for physical units and unit-aware arrays'
         technology 'Python'
-        description 'Provides support for physical units and dimensioned quantities'
+      }
+      projTime = component 'Time & Dates' {
+        description 'Manages astronomical time scales and formats'
+        technology 'Python, ERFA'
       }
       projModeling = component 'Modeling & Fitting' {
-        technology 'Python, C'
-        description 'Framework for representing and fitting models to data'
-      }
-      projIoRegistry = component 'I/O Registry' {
+        description 'Framework for analytical models and data fitting'
         technology 'Python'
-        description 'Unified interface for reading and writing various data formats'
+      }
+      projWcs = component 'WCS Module' {
+        description 'World Coordinate System transformations for images'
+        technology 'C, WCSLIB'
       }
 
-      projCoordinates -> projUnits 'uses for dimensioned values'
-      projModeling -> projUnits 'uses for parameter units'
-      projIoRegistry -> projCoordinates 'serializes coordinate data'
+      projCoordinates -> projTime 'uses for epoch transformations'
+      projCoordinates -> projUnits 'uses for angular quantities'
+      projWcs -> projCoordinates 'maps pixels to coordinates'
     }
 
-    projIoFits = service 'FITS I/O' {
+    projIoRegistry = service 'I/O Registry' {
+      technology 'Python'
+      description 'Unified interface for reading and writing various astronomical data formats'
+    }
+
+    projFitsHandler = service 'FITS I/O' {
       technology 'Python, C'
-      description 'Flexible Image Transport System (FITS) file handling'
+      description 'Handles Flexible Image Transport System (FITS) files'
     }
 
-    projIoAscii = service 'ASCII I/O' {
+    projAsciiHandler = service 'ASCII I/O' {
       technology 'Python, Cython'
-      description 'Reader/writer for various ASCII table formats (CSV, ECSV, etc.)'
+      description 'Parses and writes various text-based table formats'
+    }
+
+    projVoHandler = service 'VO / VOTable' {
+      technology 'Python, Expat'
+      description 'Support for Virtual Observatory (VO) standards and VOTable XML'
     }
 
     projSampHub = service 'SAMP Hub' {
@@ -51,74 +65,71 @@ model {
       description 'Simple Application Messaging Protocol hub for inter-tool communication'
     }
 
-    projCosmology = service 'Cosmology Module' {
+    projConfig = service 'Configuration System' {
       technology 'Python'
-      description 'Calculations for various cosmological models'
+      description 'Manages user settings and persistent configuration'
     }
 
-    projStats = service 'Stats Module' {
-      technology 'Python, C'
-      description 'Statistical functions for astronomical data'
-    }
-
-    projCoreLib -> projIoFits 'uses for data persistence'
-    projCoreLib -> projIoAscii 'uses for table data'
-    projCoreLib -> projCosmology 'provides units/constants'
-    projCoreLib -> projStats 'provides data structures'
+    projCoreLib -> projIoRegistry 'registers data formats'
+    projIoRegistry -> projFitsHandler 'delegates FITS operations'
+    projIoRegistry -> projAsciiHandler 'delegates ASCII operations'
+    projIoRegistry -> projVoHandler 'delegates VOTable operations'
+    projCoreLib -> projConfig 'reads user settings'
   }
 
   projNumpy = external 'NumPy' {
-    technology 'C, Python'
     description 'Fundamental package for scientific computing with Python'
   }
 
-  projPyerfa = external 'PyERFA' {
-    technology 'C, Python'
+  projErfa = external 'PyERFA' {
     description 'Python bindings for ERFA (Essential Routines for Fundamental Astronomy)'
   }
 
-  projIersData = external 'astropy-iers-data' {
-    description 'Provides IERS Earth rotation data'
+  projWcslib = external 'WCSLIB' {
+    description 'C library for World Coordinate System transformations'
   }
 
-  projCfitsio = external 'CFITSIO' {
-    technology 'C'
-    description 'C library for reading and writing FITS files'
+  projExpat = external 'Expat' {
+    description 'Stream-oriented XML parser library'
   }
 
-  projAstronomer -> projAstropy.projCoreLib 'performs analysis' {
+  projIersData = external 'IERS Data' {
+    description 'Earth orientation parameters and leap second data'
+  }
+
+  projUser -> projCoreLib 'performs calculations' {
     technology 'Python API'
   }
-  projAstronomer -> projAstropy.projSampHub 'connects tools' {
-    technology 'SAMP/XML-RPC'
+  projUser -> projIoRegistry 'reads/writes data files' {
+    technology 'Python API'
+  }
+  projDeveloper -> projCoreLib 'extends and builds on' {
+    technology 'Git, Python'
   }
 
-  projDeveloper -> projAstropy 'contributes code' {
-    technology 'Git/GitHub'
-  }
-
-  projAstropy.projCoreLib -> projNumpy 'uses for array operations'
-  projAstropy.projCoreLib -> projPyerfa 'uses for astrometry'
-  projAstropy.projCoreLib -> projIersData 'fetches earth orientation data'
-  projAstropy.projIoFits -> projCfitsio 'links against'
+  projCoreLib -> projNumpy 'uses for array operations'
+  projCoreLib -> projErfa 'uses for precise astrometry'
+  projCoreLib -> projWcslib 'uses for WCS projections'
+  projVoHandler -> projExpat 'uses for XML parsing'
+  projCoreLib -> projIersData 'fetches earth rotation data'
 }
 
 views {
   view projectContext {
-    title 'System Context - Astropy'
-    description 'The Astropy ecosystem and its primary users and dependencies'
+    title 'System Context - Astropy Ecosystem'
+    description 'Overview of how researchers and developers interact with Astropy and its core dependencies'
     include *
   }
 
   view projectContainers of projAstropy {
     title 'Containers - Astropy Core'
-    description 'High-level modules and services within the Astropy library'
+    description 'Internal modules and sub-packages that form the Astropy library'
     include *
   }
 
-  view projectComponents of projAstropy.projCoreLib {
+  view projectComponents of projCoreLib {
     title 'Components - Astropy Core Library'
-    description 'Internal architectural components of the core library'
+    description 'Key functional modules within the core library'
     include *
   }
 }
