@@ -1,167 +1,124 @@
 model {
-  projResearcher = actor 'Astronomer or Scientist' {
-    description 'Uses Astropy APIs and CLI tools for astronomy and astrophysics data analysis'
+  projAstronomer = actor 'Astronomer / Researcher' {
+    description 'A scientist or researcher using Astropy for data analysis and astrophysical calculations'
   }
 
-  projContributor = actor 'Astropy Contributor' {
-    description 'Develops, tests, and maintains the Astropy codebase'
+  projDeveloper = actor 'Astropy Developer' {
+    description 'A contributor developing or maintaining the core library and its extensions'
   }
 
-  projReleaseEngineer = actor 'Release Engineer' {
-    description 'Builds distributions, runs CI, and publishes releases'
-  }
+  projAstropy = system 'Astropy' {
+    description 'A core Python library for astronomy and astrophysics'
 
-  projSystem = system 'Astropy' {
-    description 'Astronomy and astrophysics core Python library with compiled extensions, scientific modules, and data I/O tooling'
+    projCoreLib = service 'Astropy Core Library' {
+      technology 'Python, C, Cython'
+      description 'The main library providing units, coordinates, tables, and WCS functionality'
 
-    projPythonPackage = service 'Core Python Package' {
-      technology 'Python 3.11+, NumPy, PyYAML, Packaging'
-      description 'Top-level package orchestration, configuration, constants, coordinates, cosmology, modeling, nddata, stats, and logger'
+      projCoordinates = component 'Coordinates Module' {
+        technology 'Python, ERFA'
+        description 'Handles celestial coordinate systems and transformations'
+      }
+      projUnits = component 'Units & Quantities' {
+        technology 'Python'
+        description 'Provides support for physical units and dimensioned quantities'
+      }
+      projModeling = component 'Modeling & Fitting' {
+        technology 'Python, C'
+        description 'Framework for representing and fitting models to data'
+      }
+      projIoRegistry = component 'I/O Registry' {
+        technology 'Python'
+        description 'Unified interface for reading and writing various data formats'
+      }
+
+      projCoordinates -> projUnits 'uses for dimensioned values'
+      projModeling -> projUnits 'uses for parameter units'
+      projIoRegistry -> projCoordinates 'serializes coordinate data'
     }
 
-    projCompiledExtensions = service 'Compiled Extension Modules' {
-      technology 'C, Cython, setuptools, extension-helpers, pyerfa'
-      description 'Performance-critical native modules for convolution, stats, FITS utilities, and related computations'
-
-      projBuildOrchestrator = component 'Build Orchestrator' {
-        description 'Discovers and configures extension modules via setup.py and extension-helpers'
-      }
-
-      projNativeKernels = component 'Native Compute Kernels' {
-        description 'C and Cython kernels for high-performance numeric operations'
-      }
-
-      projTypingStubGenerator = component 'Typing Stub Generator' {
-        description 'Generates typing stubs during install and editable builds'
-      }
-
-      projNumpyApiCompatibility = component 'NumPy C-API Compatibility Layer' {
-        description 'Applies NPY target and deprecated API macro controls for binary compatibility'
-      }
-
-      projBuildOrchestrator -> projNativeKernels 'builds and links extension binaries'
-      projBuildOrchestrator -> projNumpyApiCompatibility 'applies compile-time API constraints'
-      projBuildOrchestrator -> projTypingStubGenerator 'triggers post-install stub generation'
+    projIoFits = service 'FITS I/O' {
+      technology 'Python, C'
+      description 'Flexible Image Transport System (FITS) file handling'
     }
 
-    projIoSubsystem = service 'I/O Subsystem' {
+    projIoAscii = service 'ASCII I/O' {
       technology 'Python, Cython'
-      description 'Reads and writes astronomical data formats including FITS, ASCII, VOTable, HDF5, Parquet, and YAML'
+      description 'Reader/writer for various ASCII table formats (CSV, ECSV, etc.)'
     }
 
-    projSampHub = service 'SAMP Hub and Client Tools' {
+    projSampHub = service 'SAMP Hub' {
+      technology 'Python, XML-RPC'
+      description 'Simple Application Messaging Protocol hub for inter-tool communication'
+    }
+
+    projCosmology = service 'Cosmology Module' {
       technology 'Python'
-      description 'Implements SAMP interoperability and hub/client scripts for astronomy tool communication'
+      description 'Calculations for various cosmological models'
     }
 
-    projCliTools = frontend 'Command-Line Tools' {
-      technology 'Python entry points'
-      description 'User-facing CLI utilities such as fitscheck, fitsdiff, fitsheader, fitsinfo, wcslint, and samp_hub'
+    projStats = service 'Stats Module' {
+      technology 'Python, C'
+      description 'Statistical functions for astronomical data'
     }
 
-    projTestAutomation = integration 'CI and Test Automation' {
-      technology 'GitHub Actions, tox, pytest, CodeQL, asv'
-      description 'Automated checks, matrix testing, benchmarks, security scanning, and wheel build validation'
-    }
-
-    projPythonPackage -> projCompiledExtensions 'invokes accelerated routines'
-    projPythonPackage -> projIoSubsystem 'delegates data import and export'
-    projCliTools -> projPythonPackage 'calls library APIs for analysis and validation'
-    projCliTools -> projIoSubsystem 'reads and writes astronomy file formats'
-    projSampHub -> projPythonPackage 'uses coordinate and table functionality'
-    projTestAutomation -> projPythonPackage 'runs unit and integration tests'
-    projTestAutomation -> projCompiledExtensions 'builds and validates native modules'
-    projTestAutomation -> projIoSubsystem 'executes I/O compatibility tests'
+    projCoreLib -> projIoFits 'uses for data persistence'
+    projCoreLib -> projIoAscii 'uses for table data'
+    projCoreLib -> projCosmology 'provides units/constants'
+    projCoreLib -> projStats 'provides data structures'
   }
 
   projNumpy = external 'NumPy' {
-    technology 'Python library'
-    description 'Core numerical array dependency'
+    technology 'C, Python'
+    description 'Fundamental package for scientific computing with Python'
   }
 
-  projPyerfa = external 'pyerfa' {
-    technology 'Python/C bindings'
-    description 'ERFA astronomical routines dependency'
+  projPyerfa = external 'PyERFA' {
+    technology 'C, Python'
+    description 'Python bindings for ERFA (Essential Routines for Fundamental Astronomy)'
   }
 
   projIersData = external 'astropy-iers-data' {
-    technology 'Python package data'
-    description 'IERS Earth rotation and time reference data consumed by Astropy'
+    description 'Provides IERS Earth rotation data'
   }
 
-  projGithubActions = external 'GitHub Actions Platform' {
-    technology 'GitHub-hosted CI'
-    description 'Executes workflow automation for tests, benchmarking, release checks, and security analysis'
+  projCfitsio = external 'CFITSIO' {
+    technology 'C'
+    description 'C library for reading and writing FITS files'
   }
 
-  projOpenAstronomyWorkflows = external 'OpenAstronomy Reusable Workflows' {
-    technology 'GitHub reusable workflows'
-    description 'Shared tox and publish workflow templates used by Astropy CI'
-  }
-
-  projBenchmarkRepo = external 'astropy-benchmarks Repository' {
-    technology 'GitHub repository, asv'
-    description 'Benchmark suite cloned and executed for performance regression checks'
-  }
-
-  projCodecov = external 'Codecov' {
-    technology 'Coverage reporting service'
-    description 'Receives coverage reports from CI pipelines'
-  }
-
-  projResearcher -> projSystem.projCliTools 'runs astronomy CLI workflows' {
-    technology 'Shell'
-  }
-  projResearcher -> projSystem.projPythonPackage 'imports and uses scientific APIs' {
+  projAstronomer -> projAstropy.projCoreLib 'performs analysis' {
     technology 'Python API'
   }
-  projContributor -> projSystem.projTestAutomation 'triggers CI via pull requests and commits' {
-    technology 'GitHub'
-  }
-  projReleaseEngineer -> projSystem.projTestAutomation 'manages release and build workflows' {
-    technology 'GitHub'
+  projAstronomer -> projAstropy.projSampHub 'connects tools' {
+    technology 'SAMP/XML-RPC'
   }
 
-  projSystem.projPythonPackage -> projNumpy 'uses numerical arrays and vectorized math' {
-    technology 'Python import'
-  }
-  projSystem.projPythonPackage -> projPyerfa 'uses astronomical reference routines' {
-    technology 'Python import'
-  }
-  projSystem.projPythonPackage -> projIersData 'loads Earth orientation data' {
-    technology 'Package data access'
+  projDeveloper -> projAstropy 'contributes code' {
+    technology 'Git/GitHub'
   }
 
-  projSystem.projTestAutomation -> projGithubActions 'executes workflow jobs' {
-    technology 'GitHub Actions'
-  }
-  projSystem.projTestAutomation -> projOpenAstronomyWorkflows 'reuses shared CI workflows' {
-    technology 'Workflow call'
-  }
-  projSystem.projTestAutomation -> projBenchmarkRepo 'clones benchmark suite and runs comparisons' {
-    technology 'Git over HTTPS'
-  }
-  projSystem.projTestAutomation -> projCodecov 'uploads coverage results' {
-    technology 'HTTPS'
-  }
+  projAstropy.projCoreLib -> projNumpy 'uses for array operations'
+  projAstropy.projCoreLib -> projPyerfa 'uses for astrometry'
+  projAstropy.projCoreLib -> projIersData 'fetches earth orientation data'
+  projAstropy.projIoFits -> projCfitsio 'links against'
 }
 
 views {
   view projectContext {
     title 'System Context - Astropy'
-    description 'Scientists and maintainers interacting with Astropy and its external dependencies'
+    description 'The Astropy ecosystem and its primary users and dependencies'
     include *
   }
 
-  view projectContainers of projSystem {
-    title 'Containers - Astropy'
-    description 'Core package, native extensions, I/O subsystem, SAMP tooling, CLI tools, and CI automation'
+  view projectContainers of projAstropy {
+    title 'Containers - Astropy Core'
+    description 'High-level modules and services within the Astropy library'
     include *
   }
 
-  view projectComponents of projSystem.projCompiledExtensions {
-    title 'Components - Compiled Extension Modules'
-    description 'Internal build and native-runtime components responsible for accelerated computation and compatibility'
+  view projectComponents of projAstropy.projCoreLib {
+    title 'Components - Astropy Core Library'
+    description 'Internal architectural components of the core library'
     include *
   }
 }
