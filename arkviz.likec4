@@ -98,177 +98,113 @@ specification {
 }
 
 model {
-  projResearcher = actor 'Researcher' {
-    description 'An astronomer or researcher who uses Astropy for data analysis and scientific computing'
+  projAstronomer = actor 'Astronomer' {
+    description 'A scientist or researcher using Astropy for data analysis and astronomical calculations.'
   }
 
-  projDeveloper = actor 'Astropy Contributor' {
-    description 'A developer who contributes code, documentation, or tests to the Astropy project'
+  projDeveloper = actor 'Developer' {
+    description 'A software developer contributing to or extending the Astropy library.'
   }
 
   projAstropySystem = system 'Astropy' {
-    description 'A core Python library for Astronomy and Astrophysics'
+    description 'A core Python library for astronomy and astrophysics, providing data structures, coordinate transformations, and I/O for astronomical data formats.'
 
-    projCoreLib = service 'Astropy Core Library' {
+    projCoreLibrary = service 'Astropy Core Library' {
       technology 'Python, C, Cython'
-      description 'The main library providing core functionality for astronomy'
+      description 'The main library containing core astronomical logic, data structures, and algorithms.'
       metadata {
-        sourceFiles 'astropy/__init__.py, astropy/config/configuration.py, astropy/utils/data.py'
+        sourceFiles 'astropy/__init__.py, astropy/coordinates/__init__.py, astropy/units/__init__.py, astropy/table/__init__.py'
       }
 
-      projUnitsModule = component 'Units & Quantities' {
+      projCoordinates = component 'Coordinates Module' {
         technology 'Python'
-        description 'Handles physical units and quantities with unit conversion'
-        metadata {
-          sourceFiles 'astropy/units/core.py, astropy/units/quantity.py'
-        }
-      }
-
-      projCoordinatesModule = component 'Coordinates' {
-        technology 'Python, C'
-        description 'Provides support for celestial coordinates and transformations'
+        description 'Handles celestial coordinate systems and transformations.'
         metadata {
           sourceFiles 'astropy/coordinates/sky_coordinate.py, astropy/coordinates/baseframe.py'
         }
       }
 
-      projIoModule = component 'I/O Registry' {
+      projUnits = component 'Units & Quantities' {
         technology 'Python'
-        description 'Unified interface for reading and writing various data formats'
+        description 'Provides a framework for physical units and dimensioned quantities.'
         metadata {
-          sourceFiles 'astropy/io/registry/core.py, astropy/io/fits/__init__.py, astropy/io/ascii/core.py'
+          sourceFiles 'astropy/units/core.py, astropy/units/quantity.py'
         }
       }
 
-      projTableModule = component 'Table' {
+      projTables = component 'Table Module' {
         technology 'Python, Cython'
-        description 'High-level container for heterogeneous data'
+        description 'High-level container for heterogeneous data tables.'
         metadata {
           sourceFiles 'astropy/table/table.py, astropy/table/column.py'
         }
       }
 
-      projTimeModule = component 'Time' {
-        technology 'Python, C'
-        description 'Handles time and dates with high precision'
-        metadata {
-          sourceFiles 'astropy/time/core.py, astropy/time/formats.py'
-        }
-      }
-
-      projModelingModule = component 'Modeling' {
+      projIoRegistry = component 'I/O Registry' {
         technology 'Python'
-        description 'Framework for representing and fitting models to data'
+        description 'Unified interface for reading and writing various astronomical data formats.'
         metadata {
-          sourceFiles 'astropy/modeling/core.py, astropy/modeling/fitting.py'
+          sourceFiles 'astropy/io/registry/core.py'
         }
       }
 
-      projWcsModule = component 'WCS' {
-        technology 'Python, C'
-        description 'World Coordinate System support'
-        metadata {
-          sourceFiles 'astropy/wcs/wcs.py'
-        }
-      }
-
-      projSampModule = component 'SAMP' {
-        technology 'Python'
-        description 'Simple Application Messaging Protocol implementation'
-        metadata {
-          sourceFiles 'astropy/samp/hub.py, astropy/samp/client.py'
-        }
-      }
-
-      projUnitsModule -> projCoordinatesModule 'provides units for'
-      projTimeModule -> projCoordinatesModule 'provides time context for'
-      projIoModule -> projTableModule 'loads data into'
-      projTableModule -> projModelingModule 'provides data for fitting'
+      projCoordinates -> projUnits 'uses for angular values'
+      projTables -> projUnits 'uses for column units'
     }
 
-    projFitsScripts = service 'FITS Utilities' {
-      technology 'Python'
-      description 'Command-line tools for managing FITS files'
+    projFitsIo = service 'FITS I/O' {
+      technology 'Python, C'
+      description 'Handles Flexible Image Transport System (FITS) files, the standard data format in astronomy.'
       metadata {
-        sourceFiles 'astropy/io/fits/scripts/fitscheck.py, astropy/io/fits/scripts/fitsdiff.py'
+        sourceFiles 'astropy/io/fits/__init__.py, astropy/io/fits/hdu/compressed/settings.py'
+      }
+    }
+
+    projVotableIo = service 'VOTable I/O' {
+      technology 'Python, C (Expat)'
+      description 'Handles Virtual Observatory (VO) XML-based table formats.'
+      metadata {
+        sourceFiles 'astropy/io/votable/__init__.py, cextern/expat/README.md'
       }
     }
 
     projSampHub = service 'SAMP Hub' {
       technology 'Python'
-      description 'A hub for the Simple Application Messaging Protocol'
+      description 'Implements the Simple Applications Messaging Protocol (SAMP) for inter-tool communication.'
       metadata {
-        sourceFiles 'astropy/samp/hub_script.py'
+        sourceFiles 'astropy/samp/hub.py, astropy/samp/hub_script.py'
       }
     }
 
-    projCoreLib -> projFitsScripts 'powers'
-    projCoreLib -> projSampHub 'implements protocol for'
+    projCoreLibrary -> projFitsIo 'reads/writes FITS data'
+    projCoreLibrary -> projVotableIo 'reads/writes VOTable data'
   }
 
-  projNumpy = external 'NumPy' {
-    description 'Fundamental package for scientific computing with Python'
+  projIersData = external 'IERS Data' {
+    description 'International Earth Rotation and Reference Systems Service data for precise time and coordinate transformations.'
   }
 
   projPyErfa = external 'PyERFA' {
-    description 'Python bindings for ERFA (Essential Routines for Fundamental Astronomy)'
+    technology 'C, Python'
+    description 'Python bindings for the Essential Routines for Fundamental Astronomy (ERFA) library.'
   }
 
-  projPyYaml = external 'PyYAML' {
-    description 'YAML parser and emitter for Python'
+  projNumpy = external 'NumPy' {
+    technology 'Python, C'
+    description 'Fundamental package for scientific computing with Python, used for array operations.'
   }
 
-  projIersData = external 'astropy-iers-data' {
-    description 'IERS data for Astropy'
-  }
-
-  projGitHub = external 'GitHub' {
-    description 'Hosting for the repository, CI/CD, and issue tracking'
-  }
-
-  projPyPI = external 'PyPI' {
-    description 'Python Package Index for distribution'
-  }
-
-  projResearcher -> projAstropySystem.projCoreLib 'uses for analysis' {
-    technology 'Python API'
-  }
-
-  projResearcher -> projAstropySystem.projFitsScripts 'runs' {
-    technology 'CLI'
-  }
-
-  projDeveloper -> projGitHub 'pushes code to' {
-    technology 'Git/HTTPS'
-  }
-
-  projAstropySystem.projCoreLib -> projNumpy 'depends on'
-  projAstropySystem.projCoreLib -> projPyErfa 'depends on'
-  projAstropySystem.projCoreLib -> projPyYaml 'depends on'
-  projAstropySystem.projCoreLib -> projIersData 'depends on'
-
-  projGitHub -> projPyPI 'publishes releases to' {
-    technology 'GitHub Actions'
-  }
+  projAstronomer -> projAstropySystem 'performs analysis'
+  projDeveloper -> projAstropySystem 'contributes code'
+  projAstropySystem.projCoreLibrary -> projIersData 'fetches earth rotation data'
+  projAstropySystem.projCoreLibrary -> projPyErfa 'delegates fundamental astronomy routines'
+  projAstropySystem.projCoreLibrary -> projNumpy 'uses for array processing'
 }
 
 deployment {
-  projProdEnv = environment 'Production' {
-    projUserMachine = node 'User Local Machine' {
-      projPythonEnv = node 'Python Environment' {
-        instanceOf projAstropySystem.projCoreLib
-      }
-    }
-  }
-
-  projCIEnv = environment 'CI/CD' {
-    projGHActions = zone 'GitHub Actions' {
-      projTestNode = node 'Test Runner' {
-        description 'Runs tox and pytest'
-      }
-      projBuildNode = node 'Build Runner' {
-        description 'Builds wheels and source distributions'
-      }
+  projLocalEnv = environment 'User Local Environment' {
+    projUserNode = node 'Python Runtime' {
+      instanceOf projAstropySystem.projCoreLibrary
     }
   }
 }
@@ -276,25 +212,25 @@ deployment {
 views {
   view projectContext {
     title 'System Context - Astropy'
-    description 'The Astropy library and its ecosystem of users, developers, and dependencies'
+    description 'The Astropy library and its interactions with astronomers, developers, and fundamental data/libraries.'
     include *
   }
 
   view projectContainers of projAstropySystem {
     title 'Containers - Astropy'
-    description 'Major components and command-line utilities within the Astropy system'
+    description 'Major sub-packages and I/O handlers within the Astropy core library.'
     include *
   }
 
-  view projectComponents of projAstropySystem.projCoreLib {
-    title 'Components - Astropy Core Library'
-    description 'Internal modules providing specific astronomical functionality'
+  view projectComponents of projAstropySystem.projCoreLibrary {
+    title 'Components - Astropy Core'
+    description 'Internal modules providing the primary astronomical functionality.'
     include *
   }
 
   deployment view projectDeployment {
     title 'Deployment - Astropy'
-    description 'How Astropy is distributed and used in local environments'
+    description 'Astropy is typically deployed as a library within a user\'s local Python environment.'
     include *
   }
 }
